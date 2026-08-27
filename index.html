@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lịch Lễ Sinh</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F3EDE0;
+    --surface:#FFFDF8;
+    --surface-2:#EFE7D4;
+    --ink:#2A231C;
+    --ink-soft:#7A6F5F;
+    --primary:#7A2331;
+    --primary-dark:#5C1A25;
+    --gold:#B8923F;
+    --sage:#5C7A5E;
+    --border:#DED2B8;
+    --danger:#A33B3B;
+    --radius-s:8px;
+    --radius-m:14px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;}
+  h1,h2,h3,.display{font-family:'Fraunces',serif;font-weight:600;letter-spacing:-0.01em;}
+  .mono{font-family:'JetBrains Mono',monospace;}
+  button{font-family:inherit;cursor:pointer;}
+  input,select{font-family:inherit;}
+  #app{min-height:100vh;display:flex;flex-direction:column;}
+
+  /* ---------- Centered screens (setup/login) ---------- */
+  .center-screen{flex:1;display:flex;align-items:center;justify-content:center;padding:32px 16px;}
+  .arch-wrap{position:relative;width:100%;max-width:380px;}
+  .arch-glow{position:absolute;top:-46px;left:50%;transform:translateX(-50%);width:64px;height:64px;}
+  .arch-card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:120px 120px 16px 16px;
+    padding:64px 32px 32px;
+    box-shadow:0 20px 40px -20px rgba(42,35,28,0.25);
+    text-align:center;
+  }
+  .arch-card h1{font-size:22px;margin:0 0 4px;color:var(--primary-dark);}
+  .arch-card p.sub{color:var(--ink-soft);font-size:13px;margin:0 0 24px;}
+  .field{text-align:left;margin-bottom:14px;}
+  .field label{display:block;font-size:12px;font-weight:600;color:var(--ink-soft);margin-bottom:5px;text-transform:uppercase;letter-spacing:0.04em;}
+  .field input,.field select{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-s);background:#fff;font-size:14px;color:var(--ink);}
+  .field input:focus,.field select:focus{outline:2px solid var(--gold);outline-offset:1px;}
+  .btn{padding:11px 18px;border-radius:var(--radius-s);border:none;font-weight:600;font-size:14px;transition:transform .08s ease;}
+  .btn:active{transform:scale(0.98);}
+  .btn-primary{background:var(--primary);color:#fff;width:100%;}
+  .btn-primary:hover{background:var(--primary-dark);}
+  .btn-ghost{background:transparent;color:var(--primary);border:1px solid var(--border);}
+  .btn-danger{background:transparent;color:var(--danger);border:1px solid var(--danger);}
+  .btn-sm{padding:6px 12px;font-size:12.5px;}
+  .error-text{color:var(--danger);font-size:13px;margin:0 0 12px;}
+  .hint-text{color:var(--ink-soft);font-size:12px;margin-top:16px;line-height:1.5;}
+
+  /* ---------- App shell ---------- */
+  .topbar{background:var(--primary);color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+  .topbar .brand{display:flex;align-items:center;gap:10px;}
+  .topbar .brand svg{flex-shrink:0;}
+  .topbar h1{font-size:19px;color:#fff;margin:0;cursor:default;}
+  .topbar .who{font-size:12.5px;opacity:0.85;}
+  .topbar-actions{display:flex;align-items:center;gap:8px;}
+  .topbar-actions button{background:rgba(255,255,255,0.12);color:#fff;border:1px solid rgba(255,255,255,0.3);padding:7px 12px;border-radius:var(--radius-s);font-size:12.5px;font-weight:600;}
+  .topbar-actions button:hover{background:rgba(255,255,255,0.22);}
+
+  main{flex:1;max-width:1100px;margin:0 auto;padding:24px 18px 60px;width:100%;}
+
+  .month-nav{display:flex;align-items:center;justify-content:center;gap:18px;margin-bottom:18px;}
+  .month-nav h2{margin:0;font-size:22px;min-width:200px;text-align:center;color:var(--primary-dark);}
+  .month-nav button{background:var(--surface);border:1px solid var(--border);width:36px;height:36px;border-radius:50%;font-size:16px;color:var(--primary);}
+  .month-nav button:hover{background:var(--surface-2);}
+
+  .content-grid{display:flex;gap:22px;align-items:flex-start;}
+  .calendar-col{flex:1;min-width:0;}
+  .detail-col{width:320px;flex-shrink:0;}
+  @media (max-width:820px){.content-grid{flex-direction:column;}.detail-col{width:100%;}}
+
+  .weekdays{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:6px;}
+  .weekdays div{text-align:center;font-size:11.5px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:0.05em;}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;}
+  .cal-cell{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-s);min-height:82px;padding:6px;text-align:left;position:relative;display:flex;flex-direction:column;gap:3px;}
+  .cal-cell.empty{background:transparent;border-color:transparent;}
+  .cal-cell.selected{border-color:var(--primary);box-shadow:0 0 0 2px var(--primary) inset;}
+  .cal-cell .datenum{font-size:13px;font-weight:600;color:var(--ink);}
+  .cal-cell.today .datenum{color:var(--primary);}
+  .cal-cell .flame{position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 2px rgba(184,146,63,0.25);}
+  .cal-cell .chip{font-size:10.5px;background:var(--surface-2);color:var(--ink-soft);border-radius:5px;padding:2px 5px;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .cal-cell.has-me .chip.mine{background:var(--sage);color:#fff;}
+  .cal-cell:hover{cursor:pointer;border-color:var(--gold);}
+
+  .panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-m);padding:18px;}
+  .panel h3{margin:0 0 4px;font-size:17px;color:var(--primary-dark);}
+  .panel .panel-sub{font-size:12.5px;color:var(--ink-soft);margin:0 0 14px;}
+  .mass-item{border:1px solid var(--border);border-radius:var(--radius-s);padding:10px 12px;margin-bottom:10px;}
+  .mass-item .mass-time{font-weight:700;font-size:14px;color:var(--primary);font-family:'JetBrains Mono',monospace;}
+  .mass-item .mass-note{font-size:12px;color:var(--ink-soft);margin:2px 0 8px;}
+  .name-tag{display:inline-flex;align-items:center;gap:4px;background:var(--surface-2);border-radius:20px;padding:3px 9px 3px 9px;font-size:12px;margin:0 5px 5px 0;}
+  .name-tag button{background:none;border:none;color:var(--danger);font-size:13px;padding:0;line-height:1;}
+  .empty-note{color:var(--ink-soft);font-size:13px;text-align:center;padding:24px 8px;}
+
+  .checklist{max-height:180px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius-s);padding:8px;margin-bottom:12px;}
+  .checklist label{display:flex;align-items:center;gap:8px;font-size:13px;padding:4px 2px;}
+
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);}
+  th{color:var(--ink-soft);font-size:11.5px;text-transform:uppercase;letter-spacing:0.04em;}
+  .role-badge{font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:20px;text-transform:uppercase;letter-spacing:0.03em;}
+  .role-admin{background:var(--primary);color:#fff;}
+  .role-support{background:var(--gold);color:#fff;}
+  .role-le_sinh{background:var(--surface-2);color:var(--ink-soft);}
+
+  .modal-overlay{position:fixed;inset:0;background:rgba(42,35,28,0.45);display:flex;align-items:center;justify-content:center;padding:16px;z-index:50;}
+  .modal-box{background:var(--surface);border-radius:var(--radius-m);padding:22px;width:100%;max-width:420px;max-height:88vh;overflow-y:auto;}
+  .modal-box h3{margin-top:0;color:var(--primary-dark);}
+  .row-btns{display:flex;gap:10px;margin-top:16px;}
+  .row-btns .btn{flex:1;}
+  .top-actions-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px;}
+  .loading-note{text-align:center;color:var(--ink-soft);padding:60px 20px;font-size:14px;}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:20px;font-size:13px;z-index:100;}
+</style>
+</head>
+<body>
+<div id="app"><div class="loading-note">Đang tải…</div></div>
+
+<script type="module">
+  /* ============================================================
+     ★★★ DÁN CẤU HÌNH FIREBASE CỦA BẠN VÀO ĐÂY ★★★
+     Lấy đoạn này ở: Firebase Console > Project settings > Your apps > Web app
+     ============================================================ */
+  const firebaseConfig = {
+    apiKey: "AIzaSyDWdTXms5mUI6QRa56nC7ML28BtjoGCjXs",
+    authDomain: "lesinhgxtrangbang.firebaseapp.com",
+    projectId: "lesinhgxtrangbang",
+    storageBucket: "lesinhgxtrangbang.firebasestorage.app",
+    messagingSenderId: "1053410036396",
+    appId: "1:1053410036396:web:ad385aa950bb9ff2732d09"
+  };
+
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+  import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+
+  const fbApp = initializeApp(firebaseConfig);
+  const db = getFirestore(fbApp);
+
+  window.dbGet = async function(key){
+    const snap = await getDoc(doc(db, "leSinhApp", key));
+    return snap.exists() ? JSON.parse(snap.data().json) : null;
+  };
+  window.dbSet = async function(key, value){
+    await setDoc(doc(db, "leSinhApp", key), { json: JSON.stringify(value) });
+    return true;
+  };
+
+  window.dispatchEvent(new Event('firebase-ready'));
+</script>
+<script>
+const S = {
+  view: 'loading',
+  currentUser: null,
+  users: null,
+  schedule: null,
+  settings: null,
+  calYear: new Date().getFullYear(),
+  calMonth: new Date().getMonth(),
+  selectedDate: null,
+  loginError: '',
+  setupError: '',
+  modal: null,
+  toast: ''
+};
+
+const WEEKDAYS = ['T2','T3','T4','T5','T6','T7','CN'];
+const MONTH_NAMES = ['Tháng 1','Tháng 2','Tháng 3','Tháng 4','Tháng 5','Tháng 6','Tháng 7','Tháng 8','Tháng 9','Tháng 10','Tháng 11','Tháng 12'];
+const pad = n => String(n).padStart(2,'0');
+const dateKey = (y,m,d) => `${y}-${pad(m+1)}-${pad(d)}`;
+const todayKey = () => { const t=new Date(); return dateKey(t.getFullYear(), t.getMonth(), t.getDate()); };
+const uid = () => Math.random().toString(36).slice(2,9);
+
+function showToast(msg){ S.toast = msg; render(); setTimeout(()=>{ S.toast=''; render(); }, 2200); }
+
+async function safeGet(key){
+  try{
+    const data = await window.dbGet(key);
+    return data;
+  }catch(e){ console.error(e); return null; }
+}
+async function safeSet(key, value){
+  try{
+    await window.dbSet(key, value);
+    return true;
+  }catch(e){ console.error(e); return false; }
+}
+
+async function init(){
+  const [users, schedule, settings] = await Promise.all([
+    safeGet('users'),
+    safeGet('schedule'),
+    safeGet('settings')
+  ]);
+  S.users = users || {};
+  S.schedule = schedule || {};
+  S.settings = settings || { tenGiaoXu: 'Đội Lễ Sinh' };
+  S.view = Object.keys(S.users).length === 0 ? 'setup' : 'login';
+  render();
+}
+
+/* ---------------- Auth actions ---------------- */
+async function doSetup(e){
+  e.preventDefault();
+  const f = e.target;
+  const maSo = f.maSo.value.trim();
+  const matKhau = f.matKhau.value;
+  const hoTen = f.hoTen.value.trim();
+  if(!maSo || !matKhau || !hoTen){ S.setupError = 'Vui lòng điền đầy đủ thông tin.'; render(); return; }
+  S.users[maSo] = { matKhau, hoTen, vaiTro: 'admin', quyenHoTro: true };
+  const ok = await safeSet('users', S.users, true);
+  if(!ok){ S.setupError = 'Không thể lưu dữ liệu, vui lòng thử lại.'; render(); return; }
+  S.currentUser = { maSo, ...S.users[maSo] };
+  S.view = 'app';
+  S.setupError = '';
+  render();
+}
+
+async function doLogin(e){
+  e.preventDefault();
+  const f = e.target;
+  const maSo = f.maSo.value.trim();
+  const matKhau = f.matKhau.value;
+  const u = S.users[maSo];
+  if(!u || u.matKhau !== matKhau){
+    S.loginError = 'Mã số hoặc mật khẩu không đúng.';
+    render();
+    return;
+  }
+  S.currentUser = { maSo, ...u };
+  S.loginError = '';
+  S.view = 'app';
+  render();
+}
+
+function doLogout(){
+  S.currentUser = null;
+  S.view = 'login';
+  S.loginError = '';
+  S.modal = null;
+  render();
+}
+
+function canEditSchedule(){ return S.currentUser && (S.currentUser.vaiTro === 'admin' || S.currentUser.quyenHoTro === true); }
+function isAdmin(){ return S.currentUser && S.currentUser.vaiTro === 'admin'; }
+
+/* ---------------- Calendar helpers ---------------- */
+function changeMonth(delta){
+  let m = S.calMonth + delta, y = S.calYear;
+  if(m < 0){ m = 11; y--; } else if(m > 11){ m = 0; y++; }
+  S.calMonth = m; S.calYear = y; S.selectedDate = null;
+  render();
+}
+
+function buildCalendarCells(){
+  const y = S.calYear, m = S.calMonth;
+  const firstDay = new Date(y, m, 1).getDay(); // 0=Sun
+  const offset = (firstDay + 6) % 7; // Monday-first offset
+  const daysInMonth = new Date(y, m+1, 0).getDate();
+  const cells = [];
+  for(let i=0;i<offset;i++) cells.push(null);
+  for(let d=1; d<=daysInMonth; d++) cells.push(d);
+  while(cells.length % 7 !== 0) cells.push(null);
+  return cells;
+}
+
+function selectDate(key){
+  S.selectedDate = key;
+  render();
+}
+
+/* ---------------- Schedule editing ---------------- */
+function openAddMass(){
+  S.modal = { type:'addMass', gio:'', ghiChu:'', chosen:[] };
+  render();
+}
+function toggleChosen(maSo){
+  const idx = S.modal.chosen.indexOf(maSo);
+  if(idx>=0) S.modal.chosen.splice(idx,1); else S.modal.chosen.push(maSo);
+  render();
+}
+async function saveMass(e){
+  e.preventDefault();
+  const f = e.target;
+  const gio = f.gio.value.trim();
+  if(!gio){ return; }
+  const ghiChu = f.ghiChu.value.trim();
+  const list = S.schedule[S.selectedDate] || [];
+  list.push({ id: uid(), gio, ghiChu, lezSinh: [...S.modal.chosen] });
+  list.sort((a,b)=> a.gio.localeCompare(b.gio));
+  S.schedule[S.selectedDate] = list;
+  S.modal = null;
+  render();
+  const ok = await safeSet('schedule', S.schedule, true);
+  if(!ok) showToast('Không lưu được, vui lòng thử lại.'); else showToast('Đã lưu buổi lễ.');
+}
+async function removeMass(massId){
+  const list = S.schedule[S.selectedDate] || [];
+  S.schedule[S.selectedDate] = list.filter(mItem => mItem.id !== massId);
+  render();
+  await safeSet('schedule', S.schedule, true);
+}
+async function removePersonFromMass(massId, maSo){
+  const list = S.schedule[S.selectedDate] || [];
+  const mItem = list.find(x=>x.id===massId);
+  if(mItem){ mItem.lezSinh = mItem.lezSinh.filter(x=>x!==maSo); }
+  render();
+  await safeSet('schedule', S.schedule, true);
+}
+function openAddPerson(massId){
+  S.modal = { type:'addPerson', massId, chosen: [] };
+  render();
+}
+async function saveAddPerson(e){
+  e.preventDefault();
+  const list = S.schedule[S.selectedDate] || [];
+  const mItem = list.find(x=>x.id===S.modal.massId);
+  if(mItem){
+    S.modal.chosen.forEach(maSo => { if(!mItem.lezSinh.includes(maSo)) mItem.lezSinh.push(maSo); });
+  }
+  S.modal = null;
+  render();
+  await safeSet('schedule', S.schedule, true);
+}
+
+/* ---------------- Account management ---------------- */
+function openAccounts(){ S.view='accounts'; S.modal=null; render(); }
+function closeAccounts(){ S.view='app'; render(); }
+function openAddUser(){ S.modal = { type:'addUser' }; render(); }
+async function saveAddUser(e){
+  e.preventDefault();
+  const f = e.target;
+  const maSo = f.maSo.value.trim();
+  const matKhau = f.matKhau.value;
+  const hoTen = f.hoTen.value.trim();
+  if(!maSo || !matKhau || !hoTen){ return; }
+  if(S.users[maSo]){ showToast('Mã số này đã tồn tại.'); return; }
+  S.users[maSo] = { matKhau, hoTen, vaiTro: 'le_sinh', quyenHoTro: false };
+  S.modal = null;
+  render();
+  const ok = await safeSet('users', S.users, true);
+  showToast(ok ? 'Đã thêm tài khoản.' : 'Không lưu được, thử lại.');
+}
+async function toggleSupport(maSo){
+  const u = S.users[maSo];
+  if(!u || u.vaiTro === 'admin') return;
+  u.quyenHoTro = !u.quyenHoTro;
+  render();
+  const ok = await safeSet('users', S.users, true);
+  showToast(!ok ? 'Không lưu được, thử lại.' : (u.quyenHoTro ? 'Đã cấp quyền hỗ trợ chỉnh lịch.' : 'Đã thu hồi quyền hỗ trợ.'));
+}
+function openResetPassword(maSo){ S.modal = { type:'resetPw', maSo }; render(); }
+async function saveResetPassword(e){
+  e.preventDefault();
+  const newPw = e.target.matKhau.value;
+  if(!newPw) return;
+  S.users[S.modal.maSo].matKhau = newPw;
+  S.modal = null;
+  render();
+  await safeSet('users', S.users, true);
+  showToast('Đã đổi mật khẩu.');
+}
+async function deleteUser(maSo){
+  if(maSo === S.currentUser.maSo){ showToast('Không thể tự xoá tài khoản đang dùng.'); return; }
+  delete S.users[maSo];
+  render();
+  await safeSet('users', S.users, true);
+  showToast('Đã xoá tài khoản.');
+}
+function closeModal(){ S.modal=null; render(); }
+
+async function editChurchName(){
+  const name = prompt('Tên giáo xứ / đội lễ sinh:', S.settings.tenGiaoXu);
+  if(name === null || !name.trim()) return;
+  S.settings.tenGiaoXu = name.trim();
+  render();
+  await safeSet('settings', S.settings, true);
+}
+
+/* ---------------- Render ---------------- */
+function render(){
+  const app = document.getElementById('app');
+  if(S.view === 'loading'){ app.innerHTML = `<div class="loading-note">Đang tải…</div>`; return; }
+  if(S.view === 'setup'){ app.innerHTML = renderSetup(); attachSetup(); return; }
+  if(S.view === 'login'){ app.innerHTML = renderLogin(); attachLogin(); return; }
+  if(S.view === 'accounts'){ app.innerHTML = renderShell(renderAccounts()); attachAccountsHandlers(); attachModal(); return; }
+  app.innerHTML = renderShell(renderCalendarView());
+  attachModal();
+}
+
+function archIcon(){
+  return `<svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+    <path d="M8 34V20C8 11.1634 13.9249 4 20 4C26.0751 4 32 11.1634 32 20V34" stroke="#B8923F" stroke-width="2.2" stroke-linecap="round"/>
+    <line x1="20" y1="10" x2="20" y2="34" stroke="#B8923F" stroke-width="1.4" stroke-dasharray="2 3"/>
+  </svg>`;
+}
+
+function renderSetup(){
+  return `
+  <div class="center-screen">
+    <div class="arch-wrap">
+      <div class="arch-card">
+        ${archIcon()}
+        <h1>Khởi tạo hệ thống</h1>
+        <p class="sub">Tạo tài khoản Trưởng ban lễ sinh — người quản trị duy nhất của trang.</p>
+        ${S.setupError ? `<p class="error-text">${S.setupError}</p>` : ''}
+        <form id="setupForm">
+          <div class="field"><label>Họ tên</label><input name="hoTen" placeholder="VD: Nguyễn Văn A" required></div>
+          <div class="field"><label>Mã số đăng nhập</label><input name="maSo" class="mono" placeholder="VD: admin01" required></div>
+          <div class="field"><label>Mật khẩu</label><input name="matKhau" type="password" placeholder="Đặt mật khẩu" required></div>
+          <button class="btn btn-primary" type="submit">Tạo tài khoản quản trị</button>
+        </form>
+        <p class="hint-text">Lưu ý: dữ liệu tài khoản được lưu trong bộ nhớ dùng chung của trang, phù hợp cho nhóm nội bộ nhỏ. Không dùng chung mật khẩu quan trọng ở nơi khác cho tài khoản này.</p>
+      </div>
+    </div>
+  </div>`;
+}
+function attachSetup(){
+  document.getElementById('setupForm').addEventListener('submit', doSetup);
+}
+
+function renderLogin(){
+  return `
+  <div class="center-screen">
+    <div class="arch-wrap">
+      <div class="arch-card">
+        ${archIcon()}
+        <h1>${S.settings.tenGiaoXu}</h1>
+        <p class="sub">Đăng nhập để xem lịch phân công lễ sinh</p>
+        ${S.loginError ? `<p class="error-text">${S.loginError}</p>` : ''}
+        <form id="loginForm">
+          <div class="field"><label>Mã số</label><input name="maSo" class="mono" required autofocus></div>
+          <div class="field"><label>Mật khẩu</label><input name="matKhau" type="password" required></div>
+          <button class="btn btn-primary" type="submit">Đăng nhập</button>
+        </form>
+        <p class="hint-text">Chưa có tài khoản? Liên hệ Trưởng ban lễ sinh để được cấp mã số.</p>
+      </div>
+    </div>
+  </div>`;
+}
+function attachLogin(){
+  document.getElementById('loginForm').addEventListener('submit', doLogin);
+}
+
+function renderShell(innerHtml){
+  return `
+  <div class="topbar">
+    <div class="brand">
+      ${archIcon()}
+      <div>
+        <h1 onclick="${isAdmin() ? 'editChurchName()' : ''}" style="${isAdmin()?'cursor:pointer;':''}" title="${isAdmin() ? 'Bấm để đổi tên' : ''}">${S.settings.tenGiaoXu}</h1>
+        <div class="who">${S.currentUser.hoTen} · ${roleLabel(S.currentUser.vaiTro)}${S.currentUser.vaiTro !== 'admin' && S.currentUser.quyenHoTro ? ' · Có quyền chỉnh lịch' : ''}</div>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      ${isAdmin() ? `<button onclick="openAccounts()">Quản lý tài khoản</button>` : ''}
+      ${S.view==='accounts' ? `<button onclick="closeAccounts()">Xem lịch</button>` : ''}
+      <button onclick="doLogout()">Đăng xuất</button>
+    </div>
+  </div>
+  <main>${innerHtml}</main>
+  ${S.toast ? `<div class="toast">${S.toast}</div>` : ''}
+  `;
+}
+
+function roleLabel(r){ return r==='admin' ? 'Trưởng ban lễ sinh' : 'Lễ sinh'; }
+
+function renderCalendarView(){
+  const cells = buildCalendarCells();
+  const tKey = todayKey();
+  let gridHtml = '';
+  cells.forEach(d => {
+    if(d === null){ gridHtml += `<div class="cal-cell empty"></div>`; return; }
+    const key = dateKey(S.calYear, S.calMonth, d);
+    const masses = S.schedule[key] || [];
+    const isToday = key === tKey;
+    const isSelected = key === S.selectedDate;
+    const iAmIn = masses.some(m => m.lezSinh.includes(S.currentUser.maSo));
+    let chips = masses.slice(0,2).map(m => {
+      const mine = m.lezSinh.includes(S.currentUser.maSo);
+      return `<div class="chip ${mine?'mine':''}">${m.gio} · ${m.lezSinh.length} lễ sinh</div>`;
+    }).join('');
+    if(masses.length > 2) chips += `<div class="chip">+${masses.length-2} buổi khác</div>`;
+    gridHtml += `<div class="cal-cell ${isToday?'today':''} ${isSelected?'selected':''} ${iAmIn?'has-me':''}" onclick="selectDate('${key}')">
+      <div class="datenum">${d}</div>
+      ${chips}
+      ${isToday ? `<div class="flame"></div>` : ''}
+    </div>`;
+  });
+
+  return `
+  <div class="month-nav">
+    <button onclick="changeMonth(-1)">‹</button>
+    <h2>${MONTH_NAMES[S.calMonth]} ${S.calYear}</h2>
+    <button onclick="changeMonth(1)">›</button>
+  </div>
+  <div class="content-grid">
+    <div class="calendar-col">
+      <div class="weekdays">${WEEKDAYS.map(w=>`<div>${w}</div>`).join('')}</div>
+      <div class="cal-grid">${gridHtml}</div>
+    </div>
+    <div class="detail-col">
+      ${renderDetailPanel()}
+    </div>
+  </div>`;
+}
+
+function renderDetailPanel(){
+  if(!S.selectedDate){
+    return `<div class="panel"><div class="empty-note">Chọn một ngày trên lịch để xem chi tiết buổi lễ và lễ sinh được phân công.</div></div>`;
+  }
+  const masses = S.schedule[S.selectedDate] || [];
+  const [y,m,d] = S.selectedDate.split('-').map(Number);
+  const niceDate = `${d}/${m}/${y}`;
+  let html = `<div class="panel">
+    <h3>Ngày ${niceDate}</h3>
+    <p class="panel-sub">${masses.length} buổi lễ được xếp lịch</p>`;
+  if(masses.length === 0){
+    html += `<div class="empty-note">Chưa có buổi lễ nào trong ngày này.</div>`;
+  } else {
+    masses.forEach(mItem => {
+      html += `<div class="mass-item">
+        <div class="mass-time">${mItem.gio}</div>
+        ${mItem.ghiChu ? `<div class="mass-note">${mItem.ghiChu}</div>` : ''}
+        <div>${mItem.lezSinh.length === 0 ? '<span class="empty-note" style="padding:4px 0;display:block;">Chưa có lễ sinh</span>' : mItem.lezSinh.map(maSo => {
+          const u = S.users[maSo];
+          const name = u ? u.hoTen : maSo;
+          return `<span class="name-tag">${name}${canEditSchedule() ? `<button onclick="removePersonFromMass('${mItem.id}','${maSo}')" title="Bỏ khỏi buổi lễ">✕</button>` : ''}</span>`;
+        }).join('')}</div>
+        ${canEditSchedule() ? `<div style="margin-top:8px;display:flex;gap:8px;">
+          <button class="btn btn-ghost btn-sm" onclick="openAddPerson('${mItem.id}')">+ Thêm lễ sinh</button>
+          <button class="btn btn-danger btn-sm" onclick="removeMass('${mItem.id}')">Xoá buổi lễ</button>
+        </div>` : ''}
+      </div>`;
+    });
+  }
+  if(canEditSchedule()){
+    html += `<button class="btn btn-ghost" style="width:100%;margin-top:6px;" onclick="openAddMass()">+ Thêm buổi lễ</button>`;
+  }
+  html += `</div>`;
+  return html;
+}
+
+function renderAccounts(){
+  const rows = Object.entries(S.users).map(([maSo,u]) => `
+    <tr>
+      <td class="mono">${maSo}</td>
+      <td>${u.hoTen}</td>
+      <td>
+        <span class="role-badge role-${u.vaiTro}">${roleLabel(u.vaiTro)}</span>
+        ${u.vaiTro !== 'admin' && u.quyenHoTro ? `<span class="role-badge role-support" style="margin-left:4px;">Hỗ trợ</span>` : ''}
+      </td>
+      <td style="text-align:right;white-space:nowrap;">
+        ${u.vaiTro !== 'admin' ? `<button class="btn btn-ghost btn-sm" onclick="toggleSupport('${maSo}')">${u.quyenHoTro ? 'Thu hồi quyền hỗ trợ' : 'Cấp quyền hỗ trợ'}</button>` : ''}
+        <button class="btn btn-ghost btn-sm" onclick="openResetPassword('${maSo}')">Đổi mật khẩu</button>
+        ${u.vaiTro !== 'admin' ? `<button class="btn btn-danger btn-sm" onclick="deleteUser('${maSo}')">Xoá</button>` : ''}
+      </td>
+    </tr>`).join('');
+  return `
+  <div class="panel">
+    <div class="top-actions-row">
+      <div><h3 style="margin-bottom:2px;">Quản lý tài khoản</h3><p class="panel-sub" style="margin:0;">${Object.keys(S.users).length} tài khoản</p></div>
+      <button class="btn btn-primary btn-sm" onclick="openAddUser()">+ Thêm tài khoản lễ sinh</button>
+    </div>
+    <table>
+      <thead><tr><th>Mã số</th><th>Họ tên</th><th>Vai trò</th><th></th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <p class="hint-text">Trưởng ban lễ sinh là quản trị viên duy nhất của trang. Có thể cấp "quyền hỗ trợ" cho một lễ sinh bất kỳ để người đó được thêm/sửa buổi lễ trong lịch, và thu hồi quyền này bất cứ lúc nào. Mật khẩu được lưu trong bộ nhớ dùng chung của trang web, phù hợp cho nội bộ đội lễ sinh — không dùng lại mật khẩu quan trọng ở nơi khác.</p>
+  </div>`;
+}
+function attachAccountsHandlers(){}
+
+/* ---------------- Modals ---------------- */
+function userChecklist(excludeSelected){
+  const entries = Object.entries(S.users);
+  return `<div class="checklist">${entries.map(([maSo,u]) => `
+    <label><input type="checkbox" onchange="toggleChosen('${maSo}')" ${S.modal.chosen && S.modal.chosen.includes(maSo)?'checked':''}> ${u.hoTen} <span class="mono" style="color:var(--ink-soft);">(${maSo})</span></label>
+  `).join('')}</div>`;
+}
+
+function attachModal(){
+  if(!S.modal) return;
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.onclick = (e) => { if(e.target === overlay) closeModal(); };
+
+  let inner = '';
+  if(S.modal.type === 'addMass'){
+    inner = `<div class="modal-box">
+      <h3>Thêm buổi lễ</h3>
+      <form id="massForm">
+        <div class="field"><label>Giờ lễ</label><input name="gio" type="time" required></div>
+        <div class="field"><label>Ghi chú (tuỳ chọn)</label><input name="ghiChu" placeholder="VD: Lễ Chúa Nhật"></div>
+        <div class="field"><label>Chọn lễ sinh tham gia</label>${userChecklist()}</div>
+        <div class="row-btns">
+          <button type="button" class="btn btn-ghost" onclick="closeModal()">Huỷ</button>
+          <button type="submit" class="btn btn-primary">Lưu buổi lễ</button>
+        </div>
+      </form>
+    </div>`;
+  } else if(S.modal.type === 'addPerson'){
+    inner = `<div class="modal-box">
+      <h3>Thêm lễ sinh vào buổi lễ</h3>
+      <form id="addPersonForm">
+        ${userChecklist()}
+        <div class="row-btns">
+          <button type="button" class="btn btn-ghost" onclick="closeModal()">Huỷ</button>
+          <button type="submit" class="btn btn-primary">Thêm</button>
+        </div>
+      </form>
+    </div>`;
+  } else if(S.modal.type === 'addUser'){
+    inner = `<div class="modal-box">
+      <h3>Thêm tài khoản lễ sinh</h3>
+      <form id="addUserForm">
+        <div class="field"><label>Họ tên</label><input name="hoTen" required></div>
+        <div class="field"><label>Mã số đăng nhập</label><input name="maSo" class="mono" required></div>
+        <div class="field"><label>Mật khẩu</label><input name="matKhau" type="password" required></div>
+        <p class="hint-text" style="margin-top:0;">Tài khoản mới sẽ là lễ sinh thường. Bạn có thể cấp quyền hỗ trợ chỉnh lịch sau trong danh sách tài khoản.</p>
+        <div class="row-btns">
+          <button type="button" class="btn btn-ghost" onclick="closeModal()">Huỷ</button>
+          <button type="submit" class="btn btn-primary">Thêm tài khoản</button>
+        </div>
+      </form>
+    </div>`;
+  } else if(S.modal.type === 'resetPw'){
+    inner = `<div class="modal-box">
+      <h3>Đổi mật khẩu cho ${S.users[S.modal.maSo].hoTen}</h3>
+      <form id="resetPwForm">
+        <div class="field"><label>Mật khẩu mới</label><input name="matKhau" type="password" required></div>
+        <div class="row-btns">
+          <button type="button" class="btn btn-ghost" onclick="closeModal()">Huỷ</button>
+          <button type="submit" class="btn btn-primary">Lưu</button>
+        </div>
+      </form>
+    </div>`;
+  }
+  overlay.innerHTML = inner;
+  document.getElementById('app').appendChild(overlay);
+
+  if(S.modal.type === 'addMass') document.getElementById('massForm').addEventListener('submit', saveMass);
+  if(S.modal.type === 'addPerson') document.getElementById('addPersonForm').addEventListener('submit', saveAddPerson);
+  if(S.modal.type === 'addUser') document.getElementById('addUserForm').addEventListener('submit', saveAddUser);
+  if(S.modal.type === 'resetPw') document.getElementById('resetPwForm').addEventListener('submit', saveResetPassword);
+}
+
+window.addEventListener('firebase-ready', init, { once: true });
+
+</script>
+</body>
+</html>
